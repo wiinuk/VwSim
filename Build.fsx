@@ -1,24 +1,25 @@
-// spell-checker: ignore batchmode nographics globbing
+// spell-checker: ignore batchmode nographics globbing fsharplint printfn argu
 #load "CommandLine.fsx"
 open Argu
 open CommandLine
 open Fake.Core
-open System
 
 
 let cipherKeyEnvName = "CIPHER_KEY"
 
+// fsharplint:disable UnionCasesNames
 type CommandLineArgument =
-    | [<CustomCommandLine "--unity-exe">] UnityExe of path: string
-    | [<CustomCommandLine "--cipher-key">] CipherKey of key: string
-    | [<CustomCommandLine "--skip-activation">] SkipActivation
+    | Unity_Exe of path: string
+    | Cipher_Key of key: string
+    | Skip_Activation
+// fsharplint:enable
 with
     interface IArgParserTemplate with
         override a.Usage =
             match a with
-            | UnityExe _ -> $"Unity の実行ファイルへのパス。指定しない場合は OS ごとに推測されたパスを検索します。"
-            | CipherKey _ -> $"暗号化されたライセンスファイルの複合キー。指定しない場合は環境変数 {cipherKeyEnvName} を使います。"
-            | SkipActivation -> $"ライセンス認証をスキップします"
+            | Unity_Exe _ -> $"Unity の実行ファイルへのパス。指定しない場合は OS ごとに推測されたパスを検索します。"
+            | Cipher_Key _ -> $"暗号化されたライセンスファイルの複合キー。指定しない場合は環境変数 {cipherKeyEnvName} を使います。"
+            | Skip_Activation -> $"ライセンス認証をスキップします"
 
 let args =
     ArgumentParser
@@ -33,18 +34,18 @@ let findUnityExePath() =
     else "/opt/Unity/Editor/Unity"
 
 let unityExePath =
-    args.TryGetResult <@ UnityExe @>
+    args.TryGetResult <@ Unity_Exe @>
     |> Option.defaultWith findUnityExePath
 
 let cipherPath = "./Unity_v2019.x.ulf-cipher"
 let licensePath = "./License.ulf"
 let runUnity args = run unityExePath ["-quit"; "-batchmode"; "-nographics"; "-silent-crashes"; "-logFile"; yield! args]
 
-let skipActivation = args.Contains <@ SkipActivation @>
+let skipActivation = args.Contains <@ Skip_Activation @>
 
 if not skipActivation then
     let cipherKey =
-        args.TryGetResult <@ CipherKey @>
+        args.TryGetResult <@ Cipher_Key @>
         |> Option.defaultWith (fun _ ->
             Environment.environVarOrFail cipherKeyEnvName
         )
@@ -57,4 +58,4 @@ if not skipActivation then
     runUnity ["-manualLicenseFile"; licensePath]
 
 printfn "ビルド"
-runUnity ["-projectPath"; "./Project"; "-noUpm"; "-buildWindows64Player"; $"{Environment.CurrentDirectory}/Windows/windows.exe"]
+runUnity ["-projectPath"; "./Project"; "-executeMethod"; "Editor.BuildScript.Build"]
