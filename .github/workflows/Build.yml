@@ -26,8 +26,16 @@ jobs:
           dotnet-version: ${{ matrix.dotnet-version }}
 
       - run: dotnet fsi Build.fsx
+        env:
+          CIPHER_KEY: ${{ secrets.CIPHER_KEY }}
+
+      - uses: peaceiris/actions-gh-pages@v3.6.4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: build
 
       - uses: actions/upload-artifact@v2
         with:
-          name: WindowsBuild
-          path: Windows
+          name: WebGLBuild
+          path: WebGL
+
