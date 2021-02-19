@@ -8,6 +8,6 @@ let run fileName args =
     Proc.fromRawCommand fileName args
     |> Proc.withStandardError (UseStream(true, System.Console.OpenStandardError()))
     |> Proc.withStandardOutput (UseStream(true, System.Console.OpenStandardOutput()))
-    |> Proc.warnOnExitCode ""
+    |> Proc.ensureExitCode
     |> Proc.run
     |> ignore

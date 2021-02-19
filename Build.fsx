@@ -1,9 +1,14 @@
-// spell-checker: ignore batchmode nographics globbing fsharplint printfn argu
+// spell-checker: ignore batchmode nographics globbing
 #load "CommandLine.fsx"
 open Argu
 open CommandLine
 open Fake.Core
 
+
+let unityExePath =
+    if Environment.isWindows
+    then "C:/Program Files/Unity/Editor/Unity.exe"
+    else "/opt/Unity/Editor/Unity"
 
 let cipherKeyEnvName = "CIPHER_KEY"
 
@@ -17,7 +22,7 @@ with
     interface IArgParserTemplate with
         override a.Usage =
             match a with
-            | Unity_Exe _ -> $"Unity の実行ファイルへのパス。指定しない場合は OS ごとに推測されたパスを検索します。"
+            | Unity_Exe _ -> $"Unity の実行ファイルへのパス。指定しない場合、この OS では {unityExePath} を使います。"
             | Cipher_Key _ -> $"暗号化されたライセンスファイルの複合キー。指定しない場合は環境変数 {cipherKeyEnvName} を使います。"
             | Skip_Activation -> $"ライセンス認証をスキップします"
 
@@ -28,22 +33,17 @@ let args =
         )
         .Parse(fsi.CommandLineArgs.[1..])
 
-let findUnityExePath() =
-    if Environment.isWindows
-    then "C:/Program Files/Unity/Editor/Unity.exe"
-    else "/opt/Unity/Editor/Unity"
-
 let unityExePath =
     args.TryGetResult <@ Unity_Exe @>
-    |> Option.defaultWith findUnityExePath
+    |> Option.defaultValue unityExePath
 
-let cipherPath = "./Unity_v2019.x.ulf-cipher"
-let licensePath = "./License.ulf"
 let runUnity args = run unityExePath ["-quit"; "-batchmode"; "-nographics"; "-silent-crashes"; "-logFile"; yield! args]
 
 let skipActivation = args.Contains <@ Skip_Activation @>
-
 if not skipActivation then
+    let cipherPath = "./Unity_v2019.x.ulf-cipher"
+    let licensePath = "./License.ulf"
+
     let cipherKey =
         args.TryGetResult <@ Cipher_Key @>
         |> Option.defaultWith (fun _ ->
@@ -53,9 +53,9 @@ if not skipActivation then
     printfn "ライセンスファイルを復号化してファイルに保存"
     run "openssl" ["aes-256-cbc"; "-d"; "-in"; cipherPath; "-k"; cipherKey; "-out"; licensePath; "-iter"; "100"]
 
-    // 正常終了でも exitCode が 0 でない場合があるらしい
     printfn "Unity の認証"
-    runUnity ["-manualLicenseFile"; licensePath]
+    try runUnity ["-manualLicenseFile"; licensePath] with e -> eprintfn $"{e}"
 
 printfn "ビルド"
-runUnity ["-projectPath"; "./Project"; "-executeMethod"; "Editor.BuildScript.Build"]
+try runUnity ["-projectPath"; "./Project"; "-executeMethod"; "Editor.BuildScript.Build"] with e -> eprintfn $"{e}"
+
