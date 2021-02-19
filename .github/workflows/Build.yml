@@ -10,37 +10,49 @@ on:
 
   workflow_dispatch:
 
+env:
+  UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
-        unity-tag: [2019.4.14f1]
-        dotnet-version: ['5.0.100']
+        projectPath: Project
+        unityVersion:
+          - 2019.4.14f1
+
+        targetPlatform:
+          - WebGL
 
     runs-on: ubuntu-latest
-    container: docker://gableroux/unity3d:${{ matrix.unity-tag }}
-    env:
-      DOTNET_CLI_TELEMETRY_OPTOUT: 1
-      DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
-      NUGET_XMLDOC_MODE: skip
 
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-dotnet@v1
         with:
-          dotnet-version: ${{ matrix.dotnet-version }}
+          lfs: true
 
-      - run: dotnet fsi Build.fsx
-        env:
-          CIPHER_KEY: ${{ secrets.CIPHER_KEY }}
+      - uses: actions/cache@v1.1.0
+        with:
+          path: ${{ matrix.projectPath }}/Library
+          key: Library-${{ matrix.projectPath }}-${{ matrix.targetPlatform }}
+          restore-keys: |
+            Library-${{ matrix.projectPath }}-
+            Library-
+
+      - uses: game-ci/unity-builder@v1.5
+        with:
+          projectPath: ${{ matrix.projectPath }}
+          unityVersion: ${{ matrix.unityVersion }}
+          targetPlatform: ${{ matrix.targetPlatform }}
 
       - uses: peaceiris/actions-gh-pages@v3.6.4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: out/WebGL
+          publish_dir: build
 
       - uses: actions/upload-artifact@v2
         with:
-          name: WebGLBuild
-          path: out/WebGL
+          name: ${{ matrix.targetPlatform }}-Build
+          path: build
 
