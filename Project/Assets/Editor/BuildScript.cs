@@ -30,31 +30,24 @@ namespace Editor
         static bool isToolBar = false;
         public static void Build()
         {
-            try
+            var outputPath = "../out/WebGL";
+            Console.WriteLine($"{nameof(outputPath)}: {Path.GetFullPath(outputPath)}");
+            CreateFolder(outputPath);
+
+            PlayerSettings.SetScriptingDefineSymbolsForGroup(BuildTargetGroup.WebGL, "");
+            var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
             {
-                var outputPath = "../out/WebGL";
-                Console.WriteLine($"{nameof(outputPath)}: {Path.GetFullPath(outputPath)}");
-                CreateFolder(outputPath);
+                options = BuildOptions.None,
+                scenes = GetAllScenePaths().ToArray(),
+                target = BuildTarget.WebGL,
+                locationPathName = outputPath,
+            });
 
-                PlayerSettings.SetScriptingDefineSymbolsForGroup(BuildTargetGroup.WebGL, "");
-                var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
-                {
-                    options = BuildOptions.None,
-                    scenes = GetAllScenePaths().ToArray(),
-                    target = BuildTarget.WebGL,
-                    locationPathName = outputPath,
-                });
+            if (isToolBar) { return; }
 
-                if (isToolBar) { return; }
-
-                EditorApplication.Exit(
-                    report.summary.result == BuildResult.Succeeded ? 0 : 1
-                );
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.Message);
-            }
+            EditorApplication.Exit(
+                report.summary.result == BuildResult.Succeeded ? 0 : 1
+            );
         }
         [MenuItem("ビルド/アプリをビルド")]
         static void BuildApp() {
