@@ -5,7 +5,7 @@ open CommandLine
 open Fake.Core
 
 
-let unityExePath =
+let defaultUnityExePath =
     if Environment.isWindows
     then "C:/Program Files/Unity/Editor/Unity.exe"
     else "/opt/Unity/Editor/Unity"
@@ -22,7 +22,7 @@ with
     interface IArgParserTemplate with
         override a.Usage =
             match a with
-            | Unity_Exe _ -> $"Unity の実行ファイルへのパス。指定しない場合、この OS では {unityExePath} を使います。"
+            | Unity_Exe _ -> $"Unity の実行ファイルへのパス。指定しない場合、この OS では {defaultUnityExePath} を使います。"
             | Cipher_Key _ -> $"暗号化されたライセンスファイルの複合キー。指定しない場合は環境変数 {cipherKeyEnvName} を使います。"
             | Skip_Activation -> $"ライセンス認証をスキップします"
 
@@ -35,7 +35,7 @@ let args =
 
 let unityExePath =
     args.TryGetResult <@ Unity_Exe @>
-    |> Option.defaultValue unityExePath
+    |> Option.defaultValue defaultUnityExePath
 
 let runUnity args = run unityExePath ["-quit"; "-batchmode"; "-nographics"; "-silent-crashes"; "-logFile"; yield! args]
 

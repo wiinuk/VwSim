@@ -18,6 +18,10 @@ jobs:
 
     runs-on: ubuntu-latest
     container: docker://gableroux/unity3d:${{ matrix.unity-tag }}
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: 1
+      DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+      NUGET_XMLDOC_MODE: skip
 
     steps:
       - uses: actions/checkout@v2
